@@ -1,0 +1,12 @@
+*.cywrk.*
+*/codegentemp/
+*/CortexM3/
+*/Export/
+*/Generated_Source/
+*/*.cyprj.*
+*/*.cycdx
+*/*.cyfit
+*/*.rpt
+*/*.svd
+*/*_datasheet.pdf
+*/*_timing.html
