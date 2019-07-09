@@ -10,3 +10,4 @@
 */*.svd
 */*_datasheet.pdf
 */*_timing.html
+*.log
