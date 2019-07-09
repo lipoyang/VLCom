@@ -8,6 +8,7 @@
 #include "Timer.h"
 
 //#define AUTO_TX_TEST
+//#define LOOP_BACK_TEST
 //#define UART_BRIDGE_TEST
 #define CONTROLLER_TEST
 #define RECEIVER_TEST
@@ -15,7 +16,7 @@
 #define USBFS_DEVICE        0
 #define USBUART_BUFFER_SIZE 64
 #define DATA_SIZE 3
-#define TX_CYCLE 20 // [msec]
+#define TX_CYCLE 100 // [msec]
 #define RX_TIMEOUT 100 // [msec]
 
 static volatile uint16_t servo = 307;
@@ -60,10 +61,10 @@ static void input_and_send(void)
         // send message
         int i;
         for(i=0;i<7;i++){
-            while(TxEmpty_Read() == 0){;}
+            while(TxEmpty_Read() == 0){;} // wait for empty
             TxData_Write(tx_data[i]);
             TxWr_Write(1);
-            CyDelay(1); // TODO
+            while(TxEmpty_Read() == 1){;} // wait for busy
         }
     }
 }
@@ -76,9 +77,10 @@ static void receive_and_output(void)
     static uint8_t data_sum = 0;
     static uint8_t data_buf[DATA_SIZE];
     // VLCom receive
-    if(RxFull_Read() == 1){
+    if(RxFull_Read() == 1){ // if full
         uint8_t rx_data = RxData_Read();
         RxRd_Write(1);
+        while(RxFull_Read() == 1){;} // wait for clear of full
         
         // precess message packet
         if(rx_cnt == 0){
@@ -153,8 +155,11 @@ int main(void)
     PGA_1_SetGain(PGA_1_GAIN_01);
     PGA_2_SetGain(PGA_2_GAIN_08);
     Comp_Start();
-    //LoopBackEn_Write(1); // loop-back test
-    LoopBackEn_Write(0); // not loop-back test
+#ifdef LOOP_BACK_TEST    
+    //LoopBackEn_Write(1);
+#else
+    LoopBackEn_Write(0);
+#endif
     Clock_80k_Start();
     Clock_640k_Start();
     TxRes_Write(1);
@@ -178,11 +183,11 @@ int main(void)
         }
         
 #ifdef AUTO_TX_TEST
-        if(TxEmpty_Read() != 0){
+        if(TxEmpty_Read() == 1){ // if empty
             uint8_t txData = 'A';
             TxData_Write(txData);
             TxWr_Write(1);
-            CyDelay(20);
+            while(TxEmpty_Read() == 1){;} // wait for busy
         }
 #endif
         
@@ -197,21 +202,22 @@ int main(void)
                 if (count != 0) {
                     // VLCom send
                     uint8_t txData = buffer[0];
-                    while(TxEmpty_Read() == 0){;}
+                    while(TxEmpty_Read() == 0){;} // wait for empty
                     TxData_Write(txData);
                     TxWr_Write(1);
-                    CyDelay(20);
+                    while(TxEmpty_Read() == 1){;} // wait for busy
                 }
             }
             // VLCom receive => UART send
-            if(RxFull_Read() == 1){
+            if(RxFull_Read() == 1){ // if full
                 // VLCom receive
                 uint8_t rxData = RxData_Read();
                 RxRd_Write(1);
                 // UART send
                 while (UsbUart_CDCIsReady() == 0){;}
                 UsbUart_PutData(&rxData, 1);
-                while(RxFull_Read() == 1){;}
+                
+                while(RxFull_Read() == 1){;} // wait for clear of full
             }
         }
 #endif
