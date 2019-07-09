@@ -10,13 +10,13 @@
 //#define AUTO_TX_TEST
 //#define LOOP_BACK_TEST
 //#define UART_BRIDGE_TEST
-#define CONTROLLER_TEST
+//#define CONTROLLER_TEST
 #define RECEIVER_TEST
 
 #define USBFS_DEVICE        0
 #define USBUART_BUFFER_SIZE 64
 #define DATA_SIZE 3
-#define TX_CYCLE 100 // [msec]
+#define TX_CYCLE 20 // [msec]
 #define RX_TIMEOUT 100 // [msec]
 
 static volatile uint16_t servo = 307;
@@ -120,16 +120,17 @@ static void receive_and_output(void)
                 Pin_LED2_Write(led2);
                 Pin_LED3_Write(led3);
                 // Servo output
-                servo = 205 + 205 * rx_adc / 4096;
-                
+                servo = (uint16_t)(307 + 184 * ((signed int)rx_adc - 2048)  / 2048);
+#if 0                
                 // USB-Serial log output
                 if (UsbUart_GetConfiguration() != 0) {
                     static char uart_buff[64];
-                    sprintf(uart_buff, "Volume = %4d, SW1 = %d, SW2 = %d, SW3 = %d\n", 
-                            rx_adc, rx_sw1, rx_sw2, rx_sw3);
+                    sprintf(uart_buff, "Servo = %4d, Volume = %4d, SW1 = %d, SW2 = %d, SW3 = %d\n", 
+                            servo, rx_adc, rx_sw1, rx_sw2, rx_sw3);
                     while (UsbUart_CDCIsReady() == 0){;}
                     UsbUart_PutString(uart_buff);
                 }
+#endif
             }else{
                 rx_cnt = 0;
             }
@@ -156,7 +157,7 @@ int main(void)
     PGA_2_SetGain(PGA_2_GAIN_08);
     Comp_Start();
 #ifdef LOOP_BACK_TEST    
-    //LoopBackEn_Write(1);
+    LoopBackEn_Write(1);
 #else
     LoopBackEn_Write(0);
 #endif
