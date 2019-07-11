@@ -34,6 +34,8 @@ static void input_and_send(void)
 {
     if(Timer_hasCycled()){
         
+        Pin_Test1_Write(1);
+        
         // SW input
         uint8_t tx_sw1 = Pin_SW1_Read();
         uint8_t tx_sw2 = Pin_SW2_Read();
@@ -66,6 +68,7 @@ static void input_and_send(void)
             TxWr_Write(1);
             while(TxEmpty_Read() == 1){;} // wait for busy
         }
+        Pin_Test1_Write(0);
     }
 }
 
@@ -85,6 +88,7 @@ static void receive_and_output(void)
         // precess message packet
         if(rx_cnt == 0){
             if(rx_data == 0xA5){
+                Pin_Test1_Write(1);
                 data_sum = 0;
                 rx_cnt++;
                 Timer_start(RX_TIMEOUT);
@@ -106,6 +110,8 @@ static void receive_and_output(void)
             }
         }else if(rx_cnt == 3 + data_len){
             if(data_sum == rx_data){
+                //Pin_Test1_Write(1);
+                
                 // message received!
                 uint16_t rx_adc = ((uint16_t)data_buf[0] << 8) | (uint16_t)data_buf[1];
                 uint8_t rx_sw1 = (data_buf[2] & 0x01) ? 1 : 0;
@@ -131,6 +137,7 @@ static void receive_and_output(void)
                     UsbUart_PutString(uart_buff);
                 }
 #endif
+                Pin_Test1_Write(0);
             }else{
                 rx_cnt = 0;
             }
@@ -172,8 +179,12 @@ int main(void)
     PWM_Servo_Start();
     ADC_Volume_Start();
     
+#ifdef CONTROLLER_TEST
     Timer_init(TX_CYCLE);
-    
+#else
+    Timer_init(0);
+#endif
+
     for(;;)
     {
         // USB-Serial initialize

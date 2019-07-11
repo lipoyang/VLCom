@@ -32,18 +32,20 @@ CY_ISR(ISR_TIMER_CYCLE)
 // msec: 周期タイマの周期[msec]
 void Timer_init(int msec)
 {
-    // 割り込みの設定
-    isr_Timer_Cycle_StartEx(ISR_TIMER_CYCLE);
-    
     // フリーランタイマをスタート
     Timer_Free_Start();
     Timer_Free_WriteCounter(0);
     
-    // 周期タイマをスタート
-    hasCycled = false;
-    uint16 cnt = (uint16)(msec * 10);
-    Timer_Cycle_Start();
-    Timer_Cycle_WritePeriod(cnt);
+    if(msec != 0){
+        // 割り込みの設定
+        isr_Timer_Cycle_StartEx(ISR_TIMER_CYCLE);
+        
+        // 周期タイマをスタート
+        hasCycled = false;
+        uint16 cnt = (uint16)(msec * 10);
+        Timer_Cycle_Start();
+        Timer_Cycle_WritePeriod(cnt);
+    }
 }
 
 // タイムアウト計測をスタートする。
