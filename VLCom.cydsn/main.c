@@ -19,14 +19,14 @@
 #define TX_CYCLE 20 // [msec]
 #define RX_TIMEOUT 100 // [msec]
 
-static volatile uint16_t servo = 307;
+static volatile uint16_t pwm = 0;
 
 // servo pwm interrupt
-CY_ISR(ISR_PWM_Servo)
+CY_ISR(ISR_PWM_LED)
 {
-    PWM_Servo_ReadStatusRegister();
+    PWM_LED_ReadStatusRegister();
     
-    PWM_Servo_WriteCompare(servo);
+    PWM_LED_WriteCompare(pwm);
 }
 
 // every 100msec, get SW and Volume input => VLCom send
@@ -126,7 +126,7 @@ static void receive_and_output(void)
                 Pin_LED2_Write(led2);
                 Pin_LED3_Write(led3);
                 // Servo output
-                servo = (uint16_t)(307 + 184 * ((signed int)rx_adc - 2048)  / 2048);
+                pwm = rx_adc / 2;
 #if 0                
                 // USB-Serial log output
                 if (UsbUart_GetConfiguration() != 0) {
@@ -174,9 +174,9 @@ int main(void)
     RxRes_Write(1);
     CyDelay(20);
     
-    Clock_Servo_Start();
-    isrPWM_Servo_StartEx(ISR_PWM_Servo);
-    PWM_Servo_Start();
+    Clock_LED_Start();
+    isrPWM_LED_StartEx(ISR_PWM_LED);
+    PWM_LED_Start();
     ADC_Volume_Start();
     
 #ifdef CONTROLLER_TEST
